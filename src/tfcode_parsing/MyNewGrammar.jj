@@ -7,23 +7,26 @@ options
 }
 
 PARSER_BEGIN(MyNewGrammar)
-package tfcode_parsing;
+package pp;
 
 public class MyNewGrammar
 {
+
+public static StringBuffer outputs = new StringBuffer("");  
   public static void main(String args []) throws ParseException
   {
     MyNewGrammar parser = new MyNewGrammar(System.in);
     while (true)
     {
       System.out.println("Reading from standard input...");
-      System.out.print("Enter an expression like \"1+(2+3)*4;\" :\n");
+      System.out.print("Enter :\n");
       try
       {
         switch (MyNewGrammar.one_line())
         {
           case 0 : 
-          System.out.println("OK.");
+          System.out.println("Parsing Correctly. Here's your outputs.....");
+          System.out.println(outputs.toString());
           break;
           case 1 : 
           System.out.println("Goodbye.");
@@ -61,31 +64,47 @@ SKIP :
 TOKEN : /* OPERATORS */
 {
   < EQUAL : "=" >
-| < RESHAPE : "reshape">
-| < VARIABLE : "variable">
-| < CONV : "conv">
-| < ADD : "add">
-| < RELU : "relu">
-| < MAX_POOL : "max_pool">
+| < RESHAPE : "reshape(">
+| < VARIABLE : "variable(">
+| < CONV : "conv(">
+| < ADD : "add(">
+| < RELU : "relu(">
+| < MAX_POOL : "max_pool(">
 | < GRAPH : "graph">
 | < INPUTS : "inputs" >
 | < OUTPUTS : "outputs" >
+| < COMMA : ",">
 }
 
 TOKEN :
 {
-  < CONSTANT : (< DIGIT >)+ >
-| < REAL_NUMBER : "-" (< DIGIT >)+ | (< DIGIT >)+>
+ < REAL_NUMBER : "-" (< DIGIT >)+ | (< DIGIT >)+>
 | < #DIGIT : [ "0"-"9" ] >
 | < ALPHABET : (< LETTER >)+ >
 | < #LETTER : ( ["a"-"z"] | ["A"-"Z"] | ["_"] )+>
 }
 
-int graph() :
-{}
+int one_line() :
 {
-	< GRAPH > "[" studentid() "]" "(" < INPUTS> ")" "-" " >" "(" < OUTPUTS> ")"
-	"{" code() "}"
+  System.out.println();
+}
+{
+	< GRAPH >			{outputs.append("\n" + "result");}
+	"["					{outputs.append(getToken(0));}
+	studentid()
+	"]"					{outputs.append(getToken(0));}
+		
+	"("					{outputs.append(getToken(0));}
+	< INPUTS>			{outputs.append(getToken(0));}
+	")"					{outputs.append(getToken(0));}
+	"-"					{outputs.append(getToken(0));}
+	">"					{outputs.append(getToken(0));}
+	"("					{outputs.append(getToken(0));}
+	< OUTPUTS>			{outputs.append(getToken(0));}
+	")"					{outputs.append(getToken(0));}
+	"{"					{outputs.append("\n" + getToken(0) + "\n");}
+	code()
+	"}"					{outputs.append("\n" + getToken(0));}
 	{
 	  return 0;
 	}
@@ -94,36 +113,68 @@ int graph() :
 void studentid() :
 {}
 {
-  ( < CONSTANT> ) *
+  ( < REAL_NUMBER> {outputs.append(getToken(0));})+ 
 }
 
 void code() :
 {}
 {
-  variable_name() < EQUAL> function() ";"
+  variable_name()
+  < EQUAL>			{outputs.append(" " + getToken(0) + " ");}
+  function()
+  ";"				{outputs.append("\n");}
+  code() 
+| < OUTPUTS>		{outputs.append(getToken(0));}
+  < EQUAL>			{outputs.append(getToken(0));}
+  function()
+  ";"				{outputs.append("\n");}
+| ""
 }
 
 void variable_name() :
 {}
 {
-  ( < CONSTANT> )*
-| ( < ALPHABET> )*
+  (< REAL_NUMBER> {outputs.append(getToken(0));}
+  | < ALPHABET> {outputs.append(getToken(0));}
+  )+ 
 }
 
 void function() :
 {}
 {
-  < RESHAPE > "(" "inputs"  "," "[" array() "]" ")"
-| < VARIABLE > "(" "[" array() "]" ")"
-| < CONV > "(" "[" (< CONSTANT>)* "]" ")"
-| < ADD > "(" variable_name() "," variable_name() ")"
-| < RELU > "(" variable_name() ")"
-| < MAX_POOL> "(" variable_name() ")"
+  < RESHAPE >		{outputs.append("tf.reshape(");}
+  < INPUTS>			{outputs.append(getToken(0));}
+  < COMMA>			{outputs.append(getToken(0) + " ");}
+  "["				{outputs.append(getToken(0));}
+  array()
+  "]"				{outputs.append(getToken(0));}
+  ")" 				{outputs.append(getToken(0));}
+| < VARIABLE >		{outputs.append("tf.Variable(tf.random_normal(");}
+  "["				{outputs.append(getToken(0));}
+  array()
+  "]"				{outputs.append(getToken(0));}
+  ")" 				{outputs.append("))");}
+| < CONV >			{outputs.append("tf.nn.conv2d(");}
+  variable_name()	
+  ")" 				{outputs.append(getToken(0));}
+| < ADD >			{outputs.append("tf.add(");}
+  variable_name()	
+  < COMMA>			{outputs.append(getToken(0) + " ");}
+  variable_name()
+  ")" 				{outputs.append(getToken(0));}
+| < RELU >			{outputs.append("tf.nn.relu(");}
+  variable_name()
+  ")"				{outputs.append(getToken(0));}
+| < MAX_POOL>		{outputs.append("tf.nn.max_pool(");}
+  variable_name()
+  ")"				{outputs.append(getToken(0));}
 }
 
 void array() :
 {}
 {
-  < REAL_NUMBER> ","
-| < REAL_NUMBER>
+  < REAL_NUMBER>			{outputs.append(getToken(0));}
+  (< COMMA>					{outputs.append(getToken(0));}
+   < REAL_NUMBER> 			{outputs.append(getToken(0));}
+   )* 
 }
