@@ -1,0 +1,127 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(MyNewGrammar)
+package tfcode_parsing;
+
+public class MyNewGrammar
+{
+  public static void main(String args []) throws ParseException
+  {
+    MyNewGrammar parser = new MyNewGrammar(System.in);
+    while (true)
+    {
+      System.out.println("Reading from standard input...");
+      System.out.print("Enter an expression like \"1+(2+3)*4;\" :");
+      try
+      {
+        switch (MyNewGrammar.one_line())
+        {
+          case 0 : 
+          System.out.println("OK.");
+          break;
+          case 1 : 
+          System.out.println("Goodbye.");
+          break;
+          default : 
+          break;
+        }
+      }
+      catch (Exception e)
+      {
+        System.out.println("NOK.");
+        System.out.println(e.getMessage());
+        MyNewGrammar.ReInit(System.in);
+      }
+      catch (Error e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+        break;
+      }
+    }
+  }
+}
+
+PARSER_END(MyNewGrammar)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /* OPERATORS */
+{
+  < EQUAL : "=" >
+| < RESHAPE : "reshape">
+| < VARIABLE : "variable">
+| < CONV : "conv">
+| < ADD : "add">
+| < RELU : "relu">
+| < MAX_POOL : "max_pool">
+| < GRAPH : "graph">
+}
+
+TOKEN :
+{
+  < CONSTANT : (< DIGIT >)+ >
+| < #DIGIT : [ "0"-"9" ] >
+| < REAL_NUMBER : "-" (< DIGIT >)+ | (< DIGIT >)+>
+| < ALPHABET : (< LETTER >)+ >
+| < #LETTER : ( ["a"-"z"] | ["A"-"Z"] | ["_"] )+>
+}
+
+int graph() :
+{}
+{
+	< GRAPH > "[" studentid() "]" "(" "inputs" ")" "-" " >" "(" "outputs" ")"
+	"{" code() "}"
+	{
+	  return 0;
+	}
+}
+
+void studentid() :
+{}
+{
+  ( < CONSTANT> ) *
+}
+
+void code() :
+{}
+{
+  variable_name() < EQUAL> function() ";"
+}
+
+void variable_name() :
+{}
+{
+  ( < CONSTANT> )*
+| ( < ALPHABET> )*
+}
+
+void function() :
+{}
+{
+  < RESHAPE > "(" "inputs"  "," "[" array() "]" ")"
+| < VARIABLE > "(" "[" array() "]" ")"
+| < CONV > "(" "[" (< CONSTANT>)* "]" ")"
+| < ADD > "(" variable_name() "," variable_name() ")"
+| < RELU > "(" variable_name() ")"
+| < MAX_POOL> "(" variable_name() ")"
+}
+
+void array() :
+{}
+{
+  < REAL_NUMBER> ","
+| < REAL_NUMBER>
+}
